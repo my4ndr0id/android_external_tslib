@@ -54,7 +54,7 @@ static int check_fd(struct tslib_input *i)
     u_int64_t absbit;
 
     if (! ((ioctl(ts->fd, EVIOCGVERSION, &version) >= 0) &&
-        (version == EV_VERSION) &&
+        (version >= EV_VERSION) &&
         (ioctl(ts->fd, EVIOCGBIT(0, sizeof(bit) * 8), &bit) >= 0) &&
         (bit & (1 << EV_ABS)) &&
         (ioctl(ts->fd, EVIOCGBIT(EV_ABS, sizeof(absbit) * 8), &absbit) >= 0) &&
