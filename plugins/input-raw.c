@@ -1,4 +1,20 @@
 /*
+**
+** Copyright (C) 2011, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+/*
  *  tslib/src/ts_read_raw_module.c
  *
  *  Original version:
@@ -15,7 +31,6 @@
  * Read raw pressure, x, y, and timestamp from a touchscreen device.
  */
 #include "config.h"
-
 #include <errno.h>
 #include <stdio.h>
 
@@ -70,17 +85,18 @@ static int check_fd(struct tslib_input *i)
     return 0;
 }
 
+//ts_input_read is equipped only to handle MAX_NUMBER_OF_EVENTS at a time.
 static int ts_input_read(struct tslib_module_info *inf,
              struct ts_sample *samp, int nr)
 {
     struct tslib_input *i = (struct tslib_input *)inf;
     struct tsdev *ts = inf->dev;
-    struct input_event ev;
     int ret = nr;
     int total = 0;
-    samp->total_events = 0;
+    int eventsRead = 0;
+    int eventsProcessed = 0;
 
-    LOGV("Input-raw module read");
+    LOGV("Input-raw module read enter, samp->totalEvents = %d",samp->total_events);
 
     if (i->sane_fd == 0)
         i->sane_fd = check_fd(i);
@@ -89,32 +105,52 @@ static int ts_input_read(struct tslib_module_info *inf,
         return 0;
 
     if (i->using_syn) {
-        while (total < nr) {
-            ret = read(ts->fd, &ev, sizeof(struct input_event));
-            memcpy(&(samp->ev[samp->total_events++]), &ev, sizeof(struct input_event));
+        struct input_event *ev;
+        if(samp->total_events == MAX_NUMBER_OF_EVENTS){
+            //essentially we have not received a SYN since MAX_NUMBER_OF_EVENTS
+            //(never happens as of now),discarding the received events
+            LOGE("Input-raw module, No SYN received since %d events.",
+                    MAX_NUMBER_OF_EVENTS);
+            samp->total_events = 0;
+            return -1;
+        }
 
-            if (ret < (int)sizeof(struct input_event)) {
-                total = -1;
-                break;
-            }
+        ret = read(ts->fd, &samp->ev[samp->total_events],
+                sizeof(struct input_event) *
+                (MAX_NUMBER_OF_EVENTS - samp->total_events));
 
-            switch (ev.type) {
+        if (ret % (int)sizeof(struct input_event)) {
+            //checking if we read the correct number of bytes.
+            LOGE("Input-raw module, error during read call, ret val=%d,"
+                    " errno=%d",ret,errno);
+            samp->total_events = 0;
+            return -1;
+        }
+
+        eventsRead = ret / (int)sizeof(struct input_event);
+        LOGV("Input-raw, read %d events\n",eventsRead);
+
+        while ((total < nr) && (eventsProcessed < eventsRead)) {
+            ev = &(samp->ev[samp->total_events + eventsProcessed]);
+            LOGV("Input-Raw: %d, got: t0=%d, t1=%d, type=%d, code=%d, v=%d",
+                    (samp->total_events + eventsProcessed),
+                    (int) ev->time.tv_sec,(int) ev->time.tv_usec, ev->type,
+                    ev->code,ev->value);
+
+            eventsProcessed++;
+
+            switch (ev->type) {
             case EV_KEY:
-                switch (ev.code) {
+                switch (ev->code) {
                 case BTN_TOUCH:
-                    if (ev.value == 0) {
+                    if (ev->value == 0) {
                         /* pen up */
                         i->current_p = 0;
-                        samp->x = 0;
-                        samp->y = 0;
-                        samp->pressure = 0;
-                        samp->tv = ev.time;
-                        samp++;
-                        total++;
                     }
                     break;
                 }
                 break;
+
             case EV_SYN:
                 /* Fill out a new complete event */
                 samp->x = i->current_x;
@@ -125,39 +161,38 @@ static int ts_input_read(struct tslib_module_info *inf,
                 // current to 255 so next event will have down action
                 if (i->current_p == 0) {
                     samp->pressure = 0;
+                    samp->x = 0;
+                    samp->y = 0;
                     i->current_p = 255;
                 }
                 else {
                     samp->pressure = i->current_p;
                 }
-                samp->tv = ev.time;
-                LOGV("Input-raw read -----> x = %d, y = %d, \
-                pressure = %d", samp->x, samp->y, samp->pressure);
-    #ifdef DEBUG
-                fprintf(stderr, "RAW---------------------> \
-                %d %d %d %d.%d\n",samp->x, samp->y, samp->pressure,
-                samp->tv.tv_sec,samp->tv.tv_usec);
-    #endif       /*DEBUG*/
-                samp++;
+                samp->tv = ev->time;
+                LOGV("Input-raw read -----> x = %d, y = %d, pressure = %d",
+                        samp->x, samp->y, samp->pressure);
+                samp->tsSampleReady = 1;
                 total++;
                 break;
             case EV_ABS:
-                switch (ev.code) {
+                switch (ev->code) {
                 case ABS_X:
-                    i->current_x = ev.value;
+                    i->current_x = ev->value;
                     break;
                 case ABS_Y:
-                    i->current_y = ev.value;
+                    i->current_y = ev->value;
                     break;
                 case ABS_PRESSURE:
-                    i->current_p = ev.value;
+                    i->current_p = ev->value;
                     break;
                 }
                 break;
             }
-        }
+        } //end of while ((total < nr) && (eventsProcessed < eventsRead))
         ret = total;
+        samp->total_events += eventsProcessed;
     } else {
+        struct input_event ev;
         unsigned char *p = (unsigned char *) &ev;
         int len = sizeof(struct input_event);
 
@@ -238,6 +273,8 @@ static int ts_input_read(struct tslib_module_info *inf,
         }
         ret = total;
     }
+
+    LOGV("Input-raw module read exit, retval=%d",ret);
 
     return ret;
 }

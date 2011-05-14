@@ -42,7 +42,6 @@ extern "C" {
 //This defines max number of events read in one call to input-raw plugin
 #define MAX_NUMBER_OF_EVENTS 5
 
-#define NDEBUG 0
 #define LOG_TAG "tslib"
 
 struct tsdev;
@@ -54,9 +53,13 @@ struct ts_sample {
 	struct timeval	tv;
     //Total number of raw events read by input-raw plugin
     int total_events;
-    //The raw events read by input-raw plugin are sttored in this array
+    //The raw events read by input-raw plugin are stored in this array
     struct input_event ev[MAX_NUMBER_OF_EVENTS];
     int tsIndex;
+    //flag to notify EventHub.cpp(getEvent) that a TS sample is ready to be read
+    //i.e. input-raw has received some events (pen-up/pen-down/x/y/p) followed
+    //by a SYN event
+    int tsSampleReady ;
 };
 
 /*
