@@ -9,7 +9,11 @@ LOCAL_C_INCLUDES := \
 LOCAL_SRC_FILES :=  corgi-raw.c
 
 LOCAL_MODULE := corgi
+
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_PRELINK_MODULE := false
+
 include $(BUILD_SHARED_LIBRARY)
 
 # -------------------------- Dejitter ---------------------------
@@ -22,9 +26,12 @@ LOCAL_SRC_FILES := dejitter.c  ../src/ts_parse_vars.c
 
 LOCAL_MODULE := dejitter
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libcutils
 
 LOCAL_PRELINK_MODULE := false
+
 include $(BUILD_SHARED_LIBRARY)
 
 # -------------------------- Input-Raw ---------------------------
@@ -36,6 +43,8 @@ LOCAL_C_INCLUDES := \
 LOCAL_SRC_FILES := input-raw.c
 
 LOCAL_MODULE := inputraw
+
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES := libcutils
 
@@ -52,6 +61,8 @@ LOCAL_SRC_FILES := linear.c  ../src/ts_parse_vars.c ../android/CalibrateTouchScr
 
 LOCAL_MODULE := linear
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libcutils
 
 LOCAL_PRELINK_MODULE := false
@@ -67,6 +78,8 @@ LOCAL_SRC_FILES := variance.c ../src/ts_parse_vars.c
 
 LOCAL_MODULE := variance
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libcutils
 
 LOCAL_PRELINK_MODULE := false
@@ -81,6 +94,8 @@ LOCAL_C_INCLUDES := \
 LOCAL_SRC_FILES := pthres.c ../src/ts_parse_vars.c
 
 LOCAL_MODULE := pthres
+
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_PRELINK_MODULE := false
 include $(BUILD_SHARED_LIBRARY)

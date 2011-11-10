@@ -16,6 +16,8 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE := libtslib
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libdl libcutils
 
 LOCAL_C_INCLUDES += dalvik/libnativehelper/include/nativehelper
@@ -38,6 +40,8 @@ LOCAL_SRC_FILES := ../tests/ts_print.c
 
 LOCAL_MODULE := tsprint
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libtslib libdl
 
 # ----------- For TS_TEST ------------------------
@@ -53,6 +57,8 @@ LOCAL_SRC_FILES := ../tests/ts_test.c
 
 LOCAL_MODULE := tstest
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libtslib libdl libcutils
 
 # ----------- For TEST_UTILS ---------------------
@@ -67,6 +73,8 @@ LOCAL_C_INCLUDES := \
 LOCAL_SRC_FILES := ../tests/testutils.c
 
 LOCAL_MODULE := tsutils
+
+LOCAL_MODULE_TAGS := optional
 
 LOCAL_SHARED_LIBRARIES := libtslib libdl
 
@@ -85,6 +93,24 @@ LOCAL_SRC_FILES := ../android/CalibrateTouchScreen.c
 
 LOCAL_MODULE := tscalib
 
+LOCAL_MODULE_TAGS := optional
+
 LOCAL_SHARED_LIBRARIES := libtslib libdl libcutils
 
-$(call add-prebuilt-files, ETC, ../ts.conf)
+# ----------- For TS.CONF -------------------
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := ../ts.conf
+
+LOCAL_BUILT_MODULE_STEM := ts.conf
+
+LOCAL_MODULE_SUFFIX := $(suffix ts.conf)
+
+LOCAL_MODULE := $(basename ts.conf)
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_MODULE_CLASS := ETC
+
+include $(BUILD_PREBUILT)
